@@ -10,6 +10,7 @@ export async function PlayerGetByGroup(group:string) {
         const storage = await AsyncStorage.getItem(`${PLAYER_COLECTION}-${group}`);
         // texto para objeto
         const players: PlayerStorageDTO[] = storage ? JSON.parse(storage) : [];
+        console.log(`esotu aqui${players}`)
 
         return players;
     } catch (error) {

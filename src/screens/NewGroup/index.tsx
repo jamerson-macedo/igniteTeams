@@ -18,11 +18,7 @@ export function NewGroup() {
   
   async function handleNew() {
     try {
-<<<<<<< HEAD
       if (group.trim().length === 0) {
-=======
-      if (group.trim.length === 0) {
->>>>>>> 0379824695d9bf2bbbc69dcbdf4d6bd11e83cd73
         return Alert.alert(" Novo Grupo", "informe o nome da turma");
       }
       await groupCreate(group);

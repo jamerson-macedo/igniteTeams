@@ -4,15 +4,16 @@ import { Highlight } from "@components/Highlight";
 import { ButtonIcon } from "@components/ButtonIcon";
 import { Input } from "@components/Input";
 import { Filter } from "@components/Filter";
-import { Alert, FlatList } from "react-native";
-import { useState } from "react";
+import { Alert, FlatList, Keyboard, TextInput } from "react-native";
+import { useEffect, useRef, useState } from "react";
 import { PlayerCard } from "@components/PlayerCard";
 import { ListEmpty } from "@components/ListEmpty";
 import { Button } from "@components/Button";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { AppError } from "@utils/AppError";
 import { PlayerAddByGroup } from "@storage/players/playerAddByGroup";
-import { PlayerGetByGroup } from "@storage/players/playersGetByGroup";
+import { playersGetByGroupAndTeam } from "@storage/players/playersGetByGrupAndTeam";
+import { PlayerStorageDTO } from "@storage/players/PlayerStorageDTO";
 
 // tipando o valor
 type RouteParams = {
@@ -21,12 +22,13 @@ type RouteParams = {
 export function Players() {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [team, setTeam] = useState("time a");
-  const [players, setPlayers] = useState([]);
-  const navigation=useNavigation();
+  const [players, setPlayers] = useState<PlayerStorageDTO[]>([]);
+  const navigation = useNavigation();
   // pegabdo o valor da outra tela
   const route = useRoute();
-
+  // grupo que ta vindo da outra tela
   const { group } = route.params as RouteParams;
+  const newPLayerNameInputRef = useRef<TextInput>(null);
 
   async function handleAddPlayer() {
     if (newPlayerName.trim().length === 0) {
@@ -43,8 +45,11 @@ export function Players() {
 
     try {
       await PlayerAddByGroup(newPlayer, group);
-      const players= await PlayerGetByGroup(group);
-      console.log(players)
+      // remover o focus do inpuit
+      newPLayerNameInputRef.current?.blur();
+
+      setNewPlayerName("");
+      fetchPlayersByTeam();
     } catch (error) {
       if (error instanceof AppError) {
         Alert.alert("Nova pessoa", error.message);
@@ -54,54 +59,72 @@ export function Players() {
       }
     }
   }
+  async function fetchPlayersByTeam() {
+    try {
+      const playerByTeam = await playersGetByGroupAndTeam(group, team);
+      setPlayers(playerByTeam);
+    } catch (error) {
+      console.log(error);
+      Alert.alert(
+        "Pessoas",
+        "não foi possivel carregar os players do time selecionado"
+      );
+    }
+  } // os paramentros são uma airfunction que é o que ele precisa e o array de dependencias
+  useEffect(() => {
+    fetchPlayersByTeam();
+  }, [team]);
 
-    return (
-      <Container>
-        <Header showBackButton />
-        <Highlight
-          title={group}
-          subtitle={"adicione a galera e separe os times"}
+  return (
+    <Container>
+      <Header showBackButton />
+      <Highlight
+        title={group}
+        subtitle={"adicione a galera e separe os times"}
+      />
+      <Form>
+        <Input
+          returnKeyType="done"
+          onSubmitEditing={handleAddPlayer}
+          inputRef={newPLayerNameInputRef}
+          placeholder="Nome da pessoa"
+          autoCorrect={false}
+          value={newPlayerName}
+          onChangeText={setNewPlayerName}
         />
-        <Form>
-          <Input
-            placeholder="Nome da pessoa"
-            autoCorrect={false}
-            onChangeText={setNewPlayerName}
-          />
-          <ButtonIcon icon="add" onPress={handleAddPlayer} />
-        </Form>
-        <HeaderList>
-          <FlatList
-            horizontal={true}
-            data={["time a", "time b"]}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => (
-              <Filter
-                title={item}
-                isActive={item === team}
-                onPress={() => setTeam(item)}
-              />
-            )}
-          />
-          <NumberOfPlayers>{players.length}</NumberOfPlayers>
-        </HeaderList>
+        <ButtonIcon icon="add" onPress={handleAddPlayer} />
+      </Form>
+      <HeaderList>
         <FlatList
-          contentContainerStyle={[
-            { paddingBottom: 100 },
-            players.length === 0 && { flex: 1 },
-          ]} // no uiltimo item fica um vagao
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={() => (
-            <ListEmpty message="Não ha pessoas nesse time" />
-          )}
-          data={players}
+          horizontal={true}
+          data={["time a", "time b"]}
           keyExtractor={(item) => item}
           renderItem={({ item }) => (
-            <PlayerCard name={item} onRemove={() => {}} />
+            <Filter
+              title={item}
+              isActive={item === team}
+              onPress={() => setTeam(item)}
+            />
           )}
         />
-        <Button title="Remover Turma" type="SECUNDARY" />
-      </Container>
-    );
-  }
-
+        <NumberOfPlayers>{players.length}</NumberOfPlayers>
+      </HeaderList>
+      <FlatList
+        contentContainerStyle={[
+          { paddingBottom: 100 },
+          players.length === 0 && { flex: 1 },
+        ]} // no uiltimo item fica um vagao
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={() => (
+          <ListEmpty message="Não ha pessoas nesse time" />
+        )}
+        data={players}
+        keyExtractor={(item) => item.name}
+        renderItem={({ item }) => (
+          <PlayerCard name={item.name} onRemove={() => {}} />
+        )}
+      />
+      <Button title="Remover Turma" type="SECUNDARY" />
+    </Container>
+  );
+}

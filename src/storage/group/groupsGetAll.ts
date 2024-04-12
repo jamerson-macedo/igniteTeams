@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GROUP_COLECTION } from "@storage/storageConfig";
 
 export async function groupsGetAll() {
-    // buscar dados te que usar await
+    // buscar dados tem que usar await
     try {
 
 
