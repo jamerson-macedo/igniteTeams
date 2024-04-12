@@ -14,6 +14,7 @@ import { AppError } from "@utils/AppError";
 import { PlayerAddByGroup } from "@storage/players/playerAddByGroup";
 import { playersGetByGroupAndTeam } from "@storage/players/playersGetByGrupAndTeam";
 import { PlayerStorageDTO } from "@storage/players/PlayerStorageDTO";
+import { PlayerRemoveByGroup } from "@storage/players/playerRemoveByGroup";
 
 // tipando o valor
 type RouteParams = {
@@ -29,7 +30,22 @@ export function Players() {
   // grupo que ta vindo da outra tela
   const { group } = route.params as RouteParams;
   const newPLayerNameInputRef = useRef<TextInput>(null);
+  async function handleRemovePlayer(playerName: string){
+    try {
+      await PlayerRemoveByGroup(playerName,group)
+      // chamo para recarregar
+      fetchPlayersByTeam();
+      
+    } catch (error) {
+      console.log(error);
+      Alert.alert(
+        "Remover o jogador",
+       "Não foi possivel remover o jogador"
+      );
+      
+    }
 
+  }
   async function handleAddPlayer() {
     if (newPlayerName.trim().length === 0) {
       return Alert.alert(
@@ -121,7 +137,7 @@ export function Players() {
         data={players}
         keyExtractor={(item) => item.name}
         renderItem={({ item }) => (
-          <PlayerCard name={item.name} onRemove={() => {}} />
+          <PlayerCard name={item.name} onRemove={() => {handleRemovePlayer(item.name)}} />
         )}
       />
       <Button title="Remover Turma" type="SECUNDARY" />
